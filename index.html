@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evolution of Decisions | Clinical Decision Trees from Unstructured Notes</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --secondary: #4b5563;
+            --background: #f8fafc;
+            --text: #1e293b;
+            --light: #f1f5f9;
+            --border: #e2e8f0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', sans-serif;
+            line-height: 1.6;
+            color: var(--text);
+            background-color: var(--background);
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--primary-dark), var(--primary));
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        nav {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        nav li {
+            padding: 1rem;
+        }
+        
+        nav a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        nav a:hover {
+            color: var(--primary);
+        }
+        
+        section {
+            padding: 4rem 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-dark);
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem;
+            color: var(--primary-dark);
+        }
+        
+        p {
+            margin-bottom: 1.5rem;
+        }
+        
+        .lead {
+            font-size: 1.25rem;
+            font-weight: 300;
+            margin-bottom: 2rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-outline {
+            display: inline-block;
+            background-color: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.25rem;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+            margin-left: 1rem;
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .feature {
+            background-color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature h3 {
+            margin-top: 0;
+        }
+        
+        .feature-icon {
+            background-color: var(--light);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .steps {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            counter-reset: step;
+        }
+        
+        .step {
+            display: grid;
+            grid-template-columns: 3rem 1fr;
+            gap: 1.5rem;
+            position: relative;
+        }
+        
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            height: 3rem;
+            width: 3rem;
+            border-radius: 50%;
+            grid-column: 1;
+            grid-row: 1;
+        }
+        
+        .step::after {
+            content: '';
+            position: absolute;
+            left: 1.5rem;
+            top: 3rem;
+            height: calc(100% - 1rem);
+            width: 2px;
+            background-color: var(--border);
+            transform: translateX(-50%);
+        }
+        
+        .step:last-child::after {
+            display: none;
+        }
+        
+        .step-content {
+            grid-column: 2;
+        }
+        
+        .demo-img {
+            width: 100%;
+            max-width: 800px;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            margin: 2rem auto;
+            display: block;
+        }
+        
+        footer {
+            background-color: var(--secondary);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            h2 {
+                font-size: 1.75rem;
+            }
+            
+            nav ul {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Evolution of Decisions</h1>
+            <p class="lead">Extracting Clinical Decision Trees from Unstructured Notes Using Large Language Models</p>
+            <a href="https://evolution-of-decisions.vercel.app" class="btn">View Demo</a>
+            <a href="https://github.com/your-username/evolution-of-decisions" class="btn-outline">GitHub</a>
+        </div>
+    </header>
+    
+    <nav>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#problem">Problem</a></li>
+            <li><a href="#solution">Solution</a></li>
+            <li><a href="#approach">Approach</a></li>
+            <li><a href="#impact">Impact</a></li>
+        </ul>
+    </nav>
+    
+    <section id="overview">
+        <div class="container">
+            <h2>Project Overview</h2>
+            <p class="lead">Transforming unstructured clinical notes into structured, interpretable clinical decision trees to improve longitudinal patient care.</p>
+            
+            <div class="card">
+                <h3>What are Clinical Decision Trees?</h3>
+                <p>Clinical decision trees (CDTs) are structured, hierarchical models used in medical decision-making to represent diagnostic and treatment pathways for specific diseases. Formally, a decision tree is a directed acyclic graph (DAG), where each internal node represents a decision or a test on a patient's clinical attributes (e.g., symptoms, biomarkers, imaging results), and each leaf node corresponds to a clinical outcome, such as a diagnosis, treatment recommendation, or risk stratification.</p>
+                <p>CDTs are widely employed in diagnostic protocols. Unlike black-box deep learning models, CDTs maintain clinical trust by providing explicit, audit-friendly decision pathways.</p>
+            </div>
+            
+            <img src="/api/placeholder/800/450" alt="Clinical Decision Tree Example" class="demo-img"/>
+        </div>
+    </section>
+    
+    <section id="problem" style="background-color: var(--light);">
+        <div class="container">
+            <h2>The Problem</h2>
+            
+            <div class="grid">
+                <div class="feature">
+                    <div class="feature-icon">1</div>
+                    <h3>Unstructured Clinical Knowledge</h3>
+                    <p>Clinical notes are stored in free-text format, making it difficult to extract and systematically utilize implicit clinician insights.</p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">2</div>
+                    <h3>Privacy Constraints</h3>
+                    <p>Patient confidentiality regulations restrict the direct sharing of raw clinical notes between healthcare institutions, limiting collaboration and knowledge transfer.</p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">3</div>
+                    <h3>Heterogeneous Practices</h3>
+                    <p>Different hospitals cater to varying patient populations and have distinct treatment paradigms, making it challenging to compare and standardize care.</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Case Study: Meningioma</h3>
+                <p>Our research focuses on meningiomas, a common type of brain tumor that presents significant treatment challenges:</p>
+                <ul style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Variability in growth rates: some tumors grow slowly and never become symptomatic, while others can grow rapidly</li>
+                    <li>Potential for malignancy: up to 20% of meningiomas exhibit increased mitotic activity, local brain invasion, and higher recurrence rates</li>
+                    <li>Long-term monitoring requirements that span decades of patient care</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+    
+    <section id="solution">
+        <div class="container">
+            <h2>Our Solution</h2>
+            
+            <p class="lead">We propose a foundation model for longitudinal clinical care that utilizes aggregate clinical decision trees (CDTs) to structure clinical knowledge.</p>
+            
+            <img src="/api/placeholder/800/450" alt="Solution Overview" class="demo-img"/>
+            
+            <div class="steps">
+                <div class="step">
+                    <div class="step-content">
+                        <h3>LLM-Based Clinical Decision Tree Extraction</h3>
+                        <p>We leverage the implicit diagnostic and treatment knowledge present in large language models (LLMs) to convert unstructured clinical notes into structured clinical decision trees.</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-content">
+                        <h3>CDTs as Multipurpose Diagnostic Representations</h3>
+                        <p>We explore optimal representations of CDTs to serve as interpretable ways to visualize longitudinal treatment insights and help diagnostic practices. CDTs may be aggregated across hospitals to enable privacy-preserving collaborative learning.</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-content">
+                        <h3>Incorporating Diagnostic Cues in LLMs through CDTs</h3>
+                        <p>We demonstrate that CDTs can be used to finetune LLMs on specific clinical insights to enable clinical-grade reasoning abilities.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section id="approach" style="background-color: var(--light);">
+        <div class="container">
+            <h2>Technical Approach</h2>
+            
+            <div class="card">
+                <h3>Converting Clinical Notes to CDTs</h3>
+                <p>Our approach consists of two key components:</p>
+                <ol style="margin-left: 1.5rem; margin-bottom: 1.5rem;">
+                    <li>Converting each clinical note to its corresponding CDT using guided examples and reflection-based self-supervision</li>
+                    <li>Combining individual CDTs into an aggregate CDT by developing techniques for updating decision trees with LLMs-in-the-loop</li>
+                </ol>
+                <p>Visit our <a href="https://evolution-of-decisions.vercel.app" style="color: var(--primary);">interactive demo</a> to see this process in action.</p>
+            </div>
+            
+            <div class="card">
+                <h3>Interpretability and Knowledge Transfer</h3>
+                <p>We explore various CDT structures to optimize clinical interpretability and diagnostic relevance, and develop methods to transfer CDTs between different data distributions, enabling institutions to combine clinical information while preserving privacy.</p>
+            </div>
+            
+            <div class="card">
+                <h3>Finetuning LLMs on CDTs</h3>
+                <p>By developing techniques to finetune existing LLMs on CDTs rather than private clinical notes, we enable privacy-aware finetuning to assist clinical diagnosis and reasoning on decentralized data across institutions.</p>
+            </div>
+        </div>
+    </section>
+    
+    <section id="impact">
+        <div class="container">
+            <h2>Anticipated Impact</h2>
+            
+            <div class="grid">
+                <div class="feature">
+                    <h3>Healthcare Impact</h3>
+                    <p>By structuring physician reasoning into decision trees, the model standardizes diagnostic pathways, reducing variability in treatment decisions across institutions.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>Research Impact</h3>
+                    <p>CDTs generated by the model serve as a high-quality, interpretable dataset for future AI research, enabling finetuning of LLMs with interpretable and reasoning-capable capabilities.</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>Societal Benefits</h3>
+                    <p>The decentralized approach promotes institutional autonomy while ensuring that hospitals in resource-limited settings can benefit from AI-enhanced decision support.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <div class="container">
+            <p>© 2025 Evolution of Decisions Project</p>
+            <p>MIT Media Lab & Massachusetts General Hospital</p>
+            <div style="margin-top: 1.5rem;">
+                <a href="https://evolution-of-decisions.vercel.app" style="color: white; margin: 0 0.5rem;">Demo</a>
+                <a href="https://github.com/your-username/evolution-of-decisions" style="color: white; margin: 0 0.5rem;">GitHub</a>
+                <a href="#" style="color: white; margin: 0 0.5rem;">Contact</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
